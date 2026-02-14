@@ -225,7 +225,7 @@ Used to reduce stock when an order is placed.
 
 ### Prerequisites
 
-- Java 17
+- Java 21
 - Maven 3.8+
 - PostgreSQL 15+
 - Kafka 7.0+
@@ -243,6 +243,7 @@ Starts:
 
 - PostgreSQL
 - Kafka
+- Zookeeper
 - Redis
 - Product Service
 
@@ -258,50 +259,80 @@ mvn clean install
 mvn spring-boot:run
 ```
 
+Or run the JAR file directly:
+
+```bash
+java -jar target/stormgate-product-service-0.0.1-SNAPSHOT.jar
+```
+
 #### 4. Access
 
 - Swagger: http://localhost:8082/swagger-ui.html
-- Health: http://localhost:8082/actuator/health
-- Metrics: http://localhost:8082/actuator/prometheus
+- Health: http://localhost:8082/api/v1/health
+- Metrics: http://localhost:8082/actuator/health
+- Prometheus: http://localhost:8082/actuator/prometheus
 
 ## 📦 Project Structure
 
 ```
 product-service/
-├── src/main/java/com/company/product/
-│   ├── ProductServiceApplication.java
+├── src/main/java/com/example/stormgate_product_service/
+│   ├── StormgateProductServiceApplication.java
 │   ├── config/
-│   │   ├── SecurityConfig.java
 │   │   ├── KafkaConfig.java
 │   │   ├── RedisConfig.java
 │   │   └── OpenApiConfig.java
 │   ├── controller/
-│   │   └── ProductController.java
+│   │   ├── ProductController.java
+│   │   ├── CategoryController.java
+│   │   └── HealthController.java
 │   ├── service/
 │   │   ├── ProductService.java
+│   │   ├── CategoryService.java
 │   │   ├── InventoryService.java
-│   │   └── ProductStateMachine.java
+│   │   ├── ProductStateMachine.java
+│   │   ├── ProductEventPublisher.java
+│   │   └── OrderEventListener.java
 │   ├── domain/
 │   │   ├── Product.java
 │   │   ├── Category.java
 │   │   ├── ProductVariant.java
+│   │   ├── ProductImage.java
 │   │   └── ProductStatus.java
 │   ├── repository/
 │   │   ├── ProductRepository.java
-│   │   └── CategoryRepository.java
+│   │   ├── CategoryRepository.java
+│   │   ├── ProductVariantRepository.java
+│   │   └── ProductImageRepository.java
 │   ├── event/
-│   │   ├── ProductEvent.java
-│   │   ├── producer/
-│   │   └── consumer/
+│   │   ├── ProductCreatedEvent.java
+│   │   ├── StockUpdatedEvent.java
+│   │   └── OrderCreatedEvent.java
 │   ├── dto/
+│   │   ├── ProductDTO.java
+│   │   ├── CreateProductRequest.java
+│   │   ├── UpdateProductRequest.java
+│   │   ├── StockUpdateRequest.java
+│   │   └── CategoryDTO.java
 │   ├── mapper/
+│   │   ├── ProductMapper.java
+│   │   └── CategoryMapper.java
 │   └── exception/
+│       ├── ProductNotFoundException.java
+│       ├── CategoryNotFoundException.java
+│       ├── InsufficientStockException.java
+│       ├── InvalidProductStatusException.java
+│       └── GlobalExceptionHandler.java
 ├── src/main/resources/
-│   ├── application.yml
+│   ├── application.properties
 │   └── db/migration/
+│       └── V1__Initialize_Product_Schema.sql
+├── src/test/java/com/example/stormgate_product_service/
+│   └── service/ProductStateMachineTest.java
 ├── .github/workflows/
 ├── Dockerfile
 ├── docker-compose.yml
+├── pom.xml
 └── README.md
 ```
 
@@ -315,8 +346,8 @@ product-service/
 
 ### Authentication & Authorization
 
-- JWT validation
-- Role-based permissions
+- JWT validation (to be implemented)
+- Role-based permissions (to be implemented)
 - Admin-only product management
 
 ## 📈 Monitoring & Observability
@@ -359,13 +390,25 @@ docker exec product-service-postgres psql -U postgres -d product_db -c "\dt"
 docker exec product-service-kafka kafka-topics --list --bootstrap-server localhost:9092
 ```
 
+### Check Redis
+
+```bash
+docker exec product-service-redis redis-cli ping
+```
+
+### View Logs
+
+```bash
+docker compose logs product-service -f
+```
+
 ## 📝 Performance Considerations
 
 - Target Response Time: <250ms
 - Indexed fields: tenant_id, status, price
 - Redis caching for product listings
 - Pagination required for list endpoints
-- Async stock updates
+- Async stock updates via Kafka
 
 ## 🔗 Related Services
 
